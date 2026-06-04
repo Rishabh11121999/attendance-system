@@ -29,6 +29,10 @@ from app.routes.admin_office import (
     router as admin_office_router
 )
 
+from app.routes.admin_assignment import (
+    router as admin_assignment_router
+)
+
 # ==================================
 # FastAPI App
 # ==================================
@@ -84,4 +88,12 @@ app.include_router(
 
 app.include_router(
     admin_office_router
+)
+
+# ==================================
+# Admin Assignment Routes
+# ==================================
+
+app.include_router(
+    admin_assignment_router
 )
