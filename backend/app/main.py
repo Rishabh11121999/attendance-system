@@ -25,6 +25,10 @@ from app.routes.attendance import (
     router as attendance_router
 )
 
+from app.routes.admin_office import (
+    router as admin_office_router
+)
+
 # ==================================
 # FastAPI App
 # ==================================
@@ -72,4 +76,12 @@ app.include_router(
 
 app.include_router(
     attendance_router
+)
+
+# ==================================
+# Admin Office Routes
+# ==================================
+
+app.include_router(
+    admin_office_router
 )
