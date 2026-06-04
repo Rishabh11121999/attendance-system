@@ -1,9 +1,8 @@
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Date
-from sqlalchemy import DateTime
-from sqlalchemy import DECIMAL
-from sqlalchemy import Enum
+from sqlalchemy import String
+from sqlalchemy import Boolean
 from sqlalchemy import ForeignKey
 from sqlalchemy import TIMESTAMP
 
@@ -12,9 +11,9 @@ from sqlalchemy.sql import func
 from app.database.db import Base
 
 
-class Attendance(Base):
+class EmployeeOffice(Base):
 
-    __tablename__ = "attendance"
+    __tablename__ = "employee_offices"
 
     id = Column(
         Integer,
@@ -34,46 +33,38 @@ class Attendance(Base):
         nullable=False
     )
 
-    attendance_date = Column(
+    start_date = Column(
         Date,
         nullable=False
     )
 
-    check_in = Column(
-        DateTime,
+    end_date = Column(
+        Date,
         nullable=True
     )
 
-    check_out = Column(
-        DateTime,
+    is_active = Column(
+        Boolean,
+        default=True
+    )
+
+    assigned_by = Column(
+        Integer,
         nullable=True
     )
 
-    latitude = Column(
-        DECIMAL(10, 8),
+    remarks = Column(
+        String(255),
         nullable=True
-    )
-
-    longitude = Column(
-        DECIMAL(11, 8),
-        nullable=True
-    )
-
-    work_hours = Column(
-        DECIMAL(5, 2),
-        default=0.00
-    )
-
-    status = Column(
-        Enum(
-            "Present",
-            "Absent",
-            "Half Day"
-        ),
-        default="Present"
     )
 
     created_at = Column(
         TIMESTAMP,
         server_default=func.now()
+    )
+
+    updated_at = Column(
+        TIMESTAMP,
+        server_default=func.now(),
+        onupdate=func.now()
     )

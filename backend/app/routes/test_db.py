@@ -1,18 +1,25 @@
-from fastapi import APIRouter
-from sqlalchemy import text
-from app.database.db import SessionLocal
+from fastapi import APIRouter, Depends
+
+from app.utils.auth_middleware import (
+    get_current_user
+)
 
 router = APIRouter()
 
-@router.get("/test-db")
-def test_db():
 
-    db = SessionLocal()
+@router.get("/profile")
+def profile(
 
-    result = db.execute(
-        text("SELECT 1")
+    current_user=Depends(
+        get_current_user
     )
 
+):
+
     return {
-        "message": "Database Connected"
+
+        "status": True,
+
+        "user": current_user
+
     }
