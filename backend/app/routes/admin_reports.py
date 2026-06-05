@@ -1,7 +1,8 @@
-import os
 import pandas as pd
 
 from fastapi.responses import FileResponse
+from datetime import datetime, date
+from sqlalchemy import extract
 
 
 from fastapi import APIRouter
@@ -9,8 +10,6 @@ from fastapi import Depends
 from fastapi import Query
 
 from sqlalchemy.orm import Session
-
-from datetime import date
 
 from app.database.db import get_db
 
@@ -88,13 +87,13 @@ def daily_report(
         data.append({
 
             "employee_code":
-            employee.employee_code,
+            employee.employee_code if employee else None,
 
             "name":
-            employee.name,
+            employee.name if employee else None,
 
             "office":
-            office.office_name,
+            office.office_name if office else None,
 
             "check_in":
             row.check_in,
@@ -103,7 +102,7 @@ def daily_report(
             row.check_out,
 
             "work_hours":
-            float(row.work_hours),
+            float(row.work_hours or 0),
 
             "status":
             row.status
@@ -124,7 +123,6 @@ def daily_report(
         data
 
     }
-
 
 # ==========================================
 # MONTHLY REPORT
@@ -160,61 +158,67 @@ def monthly_report(
 
     records = db.query(
         Attendance
+    ).filter(
+
+        extract(
+            "year",
+            Attendance.attendance_date
+        ) == year,
+
+        extract(
+            "month",
+            Attendance.attendance_date
+        ) == month
+
+    ).order_by(
+
+        Attendance.attendance_date.desc()
+
     ).all()
 
     data = []
 
     for row in records:
 
-        if (
+        employee = db.query(
+            User
+        ).filter(
+            User.id == row.user_id
+        ).first()
 
-            row.attendance_date.year == year
+        office = db.query(
+            Office
+        ).filter(
+            Office.id == row.office_id
+        ).first()
 
-            and
+        data.append({
 
-            row.attendance_date.month == month
+            "employee_code":
+            employee.employee_code if employee else None,
 
-        ):
+            "name":
+            employee.name if employee else None,
 
-            employee = db.query(
-                User
-            ).filter(
-                User.id == row.user_id
-            ).first()
+            "office":
+            office.office_name if office else None,
 
-            office = db.query(
-                Office
-            ).filter(
-                Office.id == row.office_id
-            ).first()
+            "attendance_date":
+            row.attendance_date,
 
-            data.append({
+            "check_in":
+            row.check_in,
 
-                "employee_code":
-                employee.employee_code,
+            "check_out":
+            row.check_out,
 
-                "name":
-                employee.name,
+            "work_hours":
+            float(row.work_hours or 0),
 
-                "office":
-                office.office_name,
+            "status":
+            row.status
 
-                "attendance_date":
-                row.attendance_date,
-
-                "check_in":
-                row.check_in,
-
-                "check_out":
-                row.check_out,
-
-                "work_hours":
-                float(row.work_hours),
-
-                "status":
-                row.status
-
-            })
+        })
 
     return {
 
@@ -233,6 +237,7 @@ def monthly_report(
         data
 
     }
+
 
 
 # ==========================================
@@ -286,6 +291,8 @@ def employee_report(
         Attendance
     ).filter(
         Attendance.user_id == user_id
+    ).order_by(
+        Attendance.attendance_date.desc()
     ).all()
 
     data = []
@@ -301,7 +308,7 @@ def employee_report(
         data.append({
 
             "office":
-            office.office_name,
+            office.office_name if office else None,
 
             "attendance_date":
             row.attendance_date,
@@ -313,7 +320,7 @@ def employee_report(
             row.check_out,
 
             "work_hours":
-            float(row.work_hours),
+            float(row.work_hours or 0),
 
             "status":
             row.status
@@ -333,7 +340,7 @@ def employee_report(
             employee.employee_code,
 
             "name":
-            employee.name
+            employee.name 
 
         },
 
@@ -394,6 +401,8 @@ def office_report(
         Attendance
     ).filter(
         Attendance.office_id == office_id
+    ).order_by(
+        Attendance.attendance_date.desc()
     ).all()
 
     data = []
@@ -409,10 +418,10 @@ def office_report(
         data.append({
 
             "employee_code":
-            employee.employee_code,
+            employee.employee_code if employee else None,
 
             "name":
-            employee.name,
+            employee.name if employee else None,
 
             "attendance_date":
             row.attendance_date,
@@ -424,7 +433,7 @@ def office_report(
             row.check_out,
 
             "work_hours":
-            float(row.work_hours),
+            float(row.work_hours or 0),
 
             "status":
             row.status
@@ -498,13 +507,13 @@ def export_csv(
         data.append({
 
             "Employee Code":
-            employee.employee_code,
+            employee.employee_code if employee else None,
 
             "Name":
-            employee.name,
+            employee.name if employee else None,
 
             "Office":
-            office.office_name,
+            office.office_name if office else None,
 
             "Attendance Date":
             row.attendance_date,
@@ -516,7 +525,7 @@ def export_csv(
             row.check_out,
 
             "Work Hours":
-            float(row.work_hours),
+            float(row.work_hours or 0),
 
             "Status":
             row.status
@@ -524,8 +533,9 @@ def export_csv(
         })
 
     df = pd.DataFrame(data)
-
-    file_path = "attendance_report.csv"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    file_path = f"attendance_report_{timestamp}.csv"
 
     df.to_csv(
         file_path,
@@ -536,7 +546,7 @@ def export_csv(
 
         path=file_path,
 
-        filename="attendance_report.csv",
+        filename=f"attendance_report_{timestamp}.csv",
 
         media_type="text/csv"
 
@@ -596,13 +606,13 @@ def export_excel(
         data.append({
 
             "Employee Code":
-            employee.employee_code,
+            employee.employee_code if employee else None,
 
             "Name":
-            employee.name,
+            employee.name if employee else None,
 
             "Office":
-            office.office_name,
+            office.office_name if office else None,
 
             "Attendance Date":
             row.attendance_date,
@@ -614,7 +624,7 @@ def export_excel(
             row.check_out,
 
             "Work Hours":
-            float(row.work_hours),
+            float(row.work_hours or 0),
 
             "Status":
             row.status
@@ -622,8 +632,8 @@ def export_excel(
         })
 
     df = pd.DataFrame(data)
-
-    file_path = "attendance_report.xlsx"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_path = f"attendance_report_{timestamp}.xlsx"
 
     df.to_excel(
         file_path,
@@ -634,7 +644,7 @@ def export_excel(
 
         path=file_path,
 
-        filename="attendance_report.xlsx",
+        filename=f"attendance_report_{timestamp}.xlsx",
 
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
