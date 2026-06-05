@@ -16,6 +16,14 @@ from app.models.user import User
 from app.models.office import Office
 from app.models.employee_office import EmployeeOffice
 
+from app.schemas.assignment_schema import (
+    AssignmentCreate,
+    AssignmentUpdate,
+    TransferAssignment
+)
+
+
+
 router = APIRouter(
     prefix="/admin/assignments",
     tags=["Employee Office Assignment"]
@@ -201,6 +209,51 @@ def assignment_list(
         "data": data
 
     }
+
+
+# =====================================
+# ASSIGNMENT Active
+# =====================================
+
+@router.get("/active")
+def active_assignments(
+
+    db: Session = Depends(get_db),
+
+    current_user=Depends(
+        get_current_user
+    )
+
+):
+
+    return db.query(
+        EmployeeOffice
+    ).filter(
+        EmployeeOffice.is_active == True
+    ).all()
+    
+    
+# =====================================
+# ASSIGNMENT Inactive
+# =====================================
+
+@router.get("/inactive")
+def inactive_assignments(
+
+    db: Session = Depends(get_db),
+
+    current_user=Depends(
+        get_current_user
+    )
+
+):
+
+    return db.query(
+        EmployeeOffice
+    ).filter(
+        EmployeeOffice.is_active == False
+    ).all()
+    
 
 
 # =====================================
@@ -408,3 +461,333 @@ def restore_assignment(
         "Assignment restored successfully."
 
     }
+    
+# =====================================
+# OFFICE EMPLOYEE LIST
+# =====================================
+
+@router.get("/office/{office_id}/employees")
+def office_employee_list(
+
+    office_id: int,
+
+    current_user=Depends(
+        get_current_user
+    ),
+
+    db: Session = Depends(
+        get_db
+    )
+
+):
+
+    if current_user["role"] != "admin":
+
+        return {
+
+            "status": False,
+
+            "message":
+            "Only admin allowed."
+
+        }
+
+    office = db.query(
+        Office
+    ).filter(
+        Office.id == office_id
+    ).first()
+
+    if not office:
+
+        return {
+
+            "status": False,
+
+            "message":
+            "Office not found."
+
+        }
+
+    assignments = db.query(
+        EmployeeOffice
+    ).filter(
+
+        EmployeeOffice.office_id == office_id,
+
+        EmployeeOffice.is_active == True
+
+    ).all()
+
+    data = []
+
+    for row in assignments:
+
+        employee = db.query(
+            User
+        ).filter(
+            User.id == row.user_id
+        ).first()
+
+        data.append({
+
+            "employee_id":
+            employee.id,
+
+            "name":
+            employee.name,
+
+            "email":
+            employee.email,
+
+            "start_date":
+            row.start_date,
+
+            "remarks":
+            row.remarks
+
+        })
+
+    return {
+
+        "status": True,
+
+        "office":
+        office.office_name,
+
+        "count":
+        len(data),
+
+        "data":
+        data
+
+    }
+    
+# =====================================
+# EMPLOYEE CURRENT OFFICE
+# =====================================
+
+@router.get("/employee/{user_id}/office")
+def employee_current_office(
+
+    user_id: int,
+
+    current_user=Depends(
+        get_current_user
+    ),
+
+    db: Session = Depends(
+        get_db
+    )
+
+):
+
+    assignment = db.query(
+        EmployeeOffice
+    ).filter(
+
+        EmployeeOffice.user_id == user_id,
+
+        EmployeeOffice.is_active == True
+
+    ).first()
+
+    if not assignment:
+
+        return {
+
+            "status": False,
+
+            "message":
+            "No active office assigned."
+
+        }
+
+    employee = db.query(
+        User
+    ).filter(
+        User.id == user_id
+    ).first()
+
+    office = db.query(
+        Office
+    ).filter(
+        Office.id == assignment.office_id
+    ).first()
+
+    return {
+
+        "status": True,
+
+        "employee":
+        employee.name,
+
+        "office":
+        office.office_name,
+
+        "start_date":
+        assignment.start_date,
+
+        "remarks":
+        assignment.remarks
+
+    }
+    
+# =====================================
+# TRANSFER EMPLOYEE
+# =====================================
+
+@router.post("/transfer")
+def transfer_employee(
+
+    payload: TransferAssignment,
+
+    current_user=Depends(
+        get_current_user
+    ),
+
+    db: Session = Depends(
+        get_db
+    )
+
+):
+
+    if current_user["role"] != "admin":
+
+        return {
+
+            "status": False,
+
+            "message":
+            "Only admin allowed."
+
+        }
+
+    current = db.query(
+        EmployeeOffice
+    ).filter(
+
+        EmployeeOffice.user_id
+        ==
+        payload.user_id,
+
+        EmployeeOffice.is_active
+        ==
+        True
+
+    ).first()
+
+    if current:
+
+        current.is_active = False
+
+        current.end_date = payload.start_date
+
+    new_assignment = EmployeeOffice(
+
+        user_id=payload.user_id,
+
+        office_id=payload.office_id,
+
+        start_date=payload.start_date,
+
+        remarks=payload.remarks,
+
+        assigned_by=current_user["id"],
+
+        is_active=True
+
+    )
+
+    db.add(
+        new_assignment
+    )
+
+    db.commit()
+
+    db.refresh(
+        new_assignment
+    )
+
+    return {
+
+        "status": True,
+
+        "message":
+        "Employee transferred successfully.",
+
+        "assignment_id":
+        new_assignment.id
+
+    }
+    
+# =====================================
+# ASSIGNMENT HISTORY
+# =====================================
+
+@router.get("/employee/{user_id}/history")
+def assignment_history(
+
+    user_id: int,
+
+    current_user=Depends(
+        get_current_user
+    ),
+
+    db: Session = Depends(
+        get_db
+    )
+
+):
+
+    records = db.query(
+        EmployeeOffice
+    ).filter(
+
+        EmployeeOffice.user_id
+        ==
+        user_id
+
+    ).all()
+
+    data = []
+
+    for row in records:
+
+        office = db.query(
+            Office
+        ).filter(
+            Office.id == row.office_id
+        ).first()
+
+        data.append({
+
+            "office":
+            office.office_name,
+
+            "start_date":
+            row.start_date,
+
+            "end_date":
+            row.end_date,
+
+            "is_active":
+            row.is_active,
+
+            "remarks":
+            row.remarks
+
+        })
+
+    return {
+
+        "status": True,
+
+        "count":
+        len(data),
+
+        "data":
+        data
+
+    }
+    

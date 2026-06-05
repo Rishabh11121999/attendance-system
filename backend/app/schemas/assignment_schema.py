@@ -28,3 +28,13 @@ class AssignmentUpdate(BaseModel):
     remarks: Optional[str] = None
 
     is_active: Optional[bool] = None
+    
+class TransferAssignment(BaseModel):
+
+    user_id: int
+
+    office_id: int
+
+    start_date: date
+
+    remarks: Optional[str] = None
