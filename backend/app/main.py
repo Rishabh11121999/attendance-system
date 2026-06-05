@@ -33,6 +33,10 @@ from app.routes.admin_assignment import (
     router as admin_assignment_router
 )
 
+from app.routes.admin_employee import (
+    router as admin_employee_router
+)
+
 # ==================================
 # FastAPI App
 # ==================================
@@ -96,4 +100,12 @@ app.include_router(
 
 app.include_router(
     admin_assignment_router
+)
+
+# ==================================
+# Admin Employee Routes
+# ==================================
+
+app.include_router(
+    admin_employee_router
 )
