@@ -41,6 +41,10 @@ from app.routes.admin_dashboard import (
     router as admin_dashboard_router
 )
 
+from app.routes.admin_reports import (
+    router as admin_reports_router
+)
+
 # ==================================
 # FastAPI App
 # ==================================
@@ -120,4 +124,12 @@ app.include_router(
 
 app.include_router(
     admin_dashboard_router
+)
+
+# ==================================
+# Admin Reports Routes
+# ==================================
+
+app.include_router(
+    admin_reports_router
 )
