@@ -45,6 +45,19 @@ from app.routes.admin_reports import (
     router as admin_reports_router
 )
 
+from app.routes import employee_leave
+
+from app.routes import admin_leave
+
+from app.routes import admin_holiday
+
+from app.routes import employee_holiday
+
+
+
+
+
+
 # ==================================
 # FastAPI App
 # ==================================
@@ -132,4 +145,36 @@ app.include_router(
 
 app.include_router(
     admin_reports_router
+)
+
+# ==================================
+# Employee Leave Routes 
+# ==================================
+
+app.include_router(
+    employee_leave.router
+)
+
+# ==================================
+# Admin Leave Routes
+# ==================================
+
+app.include_router(
+    admin_leave.router
+)
+
+# ==================================
+# Admin Holiday Routes
+# ==================================
+
+app.include_router(
+    admin_holiday.router
+)
+
+# ==================================
+# Employee Holiday Routes
+# ==================================
+
+app.include_router(
+    employee_holiday.router
 )
